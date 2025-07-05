@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsNow | 聚热</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <div class="logo">
+                    <img src="./logo.png" width="100" height="30">
+                </div>
+                <div class="title">
+                    <span class="news">News<br/>Now</span>
+                    <span class="version">v0.0.30</span>
+                </div>
+            </div>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#">更多</a></li>
+                    <li><a href="#">关注</a></li>
+                    <li><a href="#" class="active">最热</a></li>
+                    <li><a href="#">实时</a></li>
+                </ul>
+            </nav>
+            
+            <div class="user-actions">
+                <a href="#" class="icon-btn refresh-btn"><i class="fas fa-sync-alt"></i></a>
+                <a href="#" class="icon-btn user-btn"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="news-grid">
+            <!-- 知乎栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon zhihu-icon">知</div>
+                        <div class="source-info">
+                            <span class="source-name">知乎</span>
+                            <span class="update-time">12分钟前更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="zhihu-list">
+                </div>
+            </div>
+
+            <!-- 微博栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon weibo-icon">
+                            <i class="fab fa-weibo"></i>
+                        </div>
+                        <div class="source-info">
+                            <span class="source-name">微博</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="weibo-list">
+                </div>
+            </div>
+
+            <!-- 酷安栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon kuai-icon">酷</div>
+                        <div class="source-info">
+                            <span class="source-name">酷安</span>
+                            <span class="update-time">30分钟前更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="kuai-list">
+                </div>
+            </div>
+
+            <!-- 华尔街见闻栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon wallstreet-icon">华</div>
+                        <div class="source-info">
+                            <span class="source-name">华尔街见闻</span>
+                            <span class="update-time">10分钟前更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="wallstreet-list">
+                </div>
+            </div>
+
+            <!-- 抖音栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon douyin-icon">抖</div>
+                        <div class="source-info">
+                            <span class="source-name">抖音</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="douyin-list">
+                </div>
+            </div>
+
+            <!-- 虎扑栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon hupu-icon">虎</div>
+                        <div class="source-info">
+                            <span class="source-name">虎扑</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="hupu-list">
+                </div>
+            </div>
+
+            <!-- 百度知道栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon baidu-icon">百</div>
+                        <div class="source-info">
+                            <span class="source-name">百度贴吧</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="baidu-list">
+                </div>
+            </div>
+
+            <!-- 今日头条栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon toutiao-icon">今</div>
+                        <div class="source-info">
+                            <span class="source-name">今日头条</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="toutiao-list">
+                </div>
+            </div>
+
+            <!-- 澎湃新闻栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon pengpai-icon">澎</div>
+                        <div class="source-info">
+                            <span class="source-name">澎湃新闻</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="pengpai-list">
+                </div>
+            </div>
+
+            <!-- 财联社栏目 -->
+            <div class="news-card">
+                <div class="card-header">
+                    <div class="source">
+                        <div class="source-icon cls-icon">财</div>
+                        <div class="source-info">
+                            <span class="source-name">财联社</span>
+                            <span class="update-time">刚刚更新</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <i class="fas fa-sync-alt"></i>
+                        <i class="far fa-star"></i>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                </div>
+                <div class="news-list" id="cls-list">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html> 
