@@ -175,6 +175,35 @@
         let currentIndex = 0;
         let micPermissionGranted = false;
         
+        // 初始化语音识别
+        function initSpeechRecognition() {
+            // 检查浏览器是否支持语音识别
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                
+                // 设置语音识别参数
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'zh-CN';
+                
+                // 设置事件处理函数
+                recognition.onstart = handleRecognitionStart;
+                recognition.onend = handleRecognitionEnd;
+                recognition.onresult = handleRecognitionResult;
+                recognition.onerror = handleRecognitionError;
+                
+                // 绑定按钮点击事件
+                toggleButton.addEventListener('click', toggleRecognition);
+            
+                // 尝试预先获取麦克风权限
+                requestMicrophonePermission();
+            
+                // 浏览器不支持语音识别
+                displayWarning('⚠️ 当前浏览器不支持语音识别功能');
+                disableSpeechRecognition();
+            }
+        }
+        
         
         // 显示警告信息
         function displayWarning(message) {
@@ -297,10 +326,10 @@
                     updateRobotState(4);
                     break;
                     
-                // case 'network':
-                //     displayWarning('⚠️ 网络连接错误，请检查您的互联网连接');
-                //     updateRobotState(4);
-                //     break;
+                case 'network':
+                    displayWarning('⚠️ 网络连接错误，请检查您的互联网连接');
+                    updateRobotState(4);
+                    break;
                     
                 case 'aborted':
                     // 用户或系统中止
@@ -343,8 +372,8 @@
             }
         }
         
-        // 页面加载完成后初始化语音识别
-        document.addEventListener('DOMContentLoaded', initSpeechRecognition);
+        // 立即初始化语音识别，无需等待DOMContentLoaded事件
+        initSpeechRecognition();
     </script>
 </body>
 </html>
