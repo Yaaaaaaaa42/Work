@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI情感交互界面</title>
+    <style>
+        body {
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .response-box {
+            width: 600px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 32px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .emoji-container {
+            text-align: center;
+            margin-bottom: 24px;
+            animation: emoji-enter 0.5s ease;
+        }
+
+        .emoji {
+            font-size: 50px;
+            display: inline-block;
+            transform-origin: center bottom;
+            animation: emoji-bounce 1.2s infinite;
+        }
+
+        .response-text {
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            padding: 16px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            height: 80px;
+        }
+        
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        #status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            background: #ccc;
+        }
+        
+        #status.active {
+            background: #00c853;
+            animation: pulse 1s infinite;
+        }
+        
+        #transcript {
+            width: 600px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+            padding: 1rem;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .interim {
+            color: #666;
+            font-style: italic;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #1890ff;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background: #40a9ff;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .warning-message {
+            color: #ff4d4f;
+            font-weight: bold;
+        }
+
+        .input-area {
+            display: flex;
+            width: 600px;
+            margin-top: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        @keyframes emoji-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* 缩放和淡入 */
+        @keyframes emoji-enter {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0,200,83,0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0,200,83,0); }
+            100% { box-shadow: 0 0 0 0 rgba(0,200,83,0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="response-box">
+        <div class="emoji-container">
+            <span class="emoji">🤖</span>
+        </div>
+        <div class="response-text" id="responseContent">
+            你好！我是您的AI助手，请问有什么可以帮您？
+        </div>
+        
+        <div class="voice-controls">
+            <span id="status"></span>
+            <button id="toggleBtn">开始语音识别</button>
+        </div>
+    </div>
+
+    <div id="transcript"></div>
+
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="请输入您的问题...">
+        <button id="sendBtn">发送</button>
+    </div>
+
+    <script>
+        // 后端API地址
+        const API_BASE_URL = 'http://localhost:8081/api';
+        
+        // 获取DOM元素
+        const emojiElement = document.querySelector('.emoji');
+        const responseElement = document.getElementById('responseContent');
+        const transcriptElement = document.getElementById('transcript');
+        const statusElement = document.getElementById('status');
+        const toggleButton = document.getElementById('toggleBtn');
+        const emojiContainer = document.querySelector('.emoji-container');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendBtn');
+        
+        // 创建语音识别对象
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        
+        // 语音识别和自动切换状态变量
+        let isRecognizing = false;
+        let autoChangeInterval = null;
+        let currentIndex = 0;
+        let micPermissionGranted = false;
+        
+        // 初始化页面，从后端获取初始状态
+        window.addEventListener('DOMContentLoaded', initializePage);
+
+        // 初始化页面
+        function initializePage() {
+            // 从后端API获取初始状态
+            fetch(`${API_BASE_URL}/chat/init`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 0 && data.data) {
+                        updateRobotState(data.data.emoji, data.data.content);
+                    }
+                })
+                .catch(error => {
+                    console.error('获取初始状态失败:', error);
+                });
+
+            // 初始化语音识别
+            initSpeechRecognition();
+
+            // 绑定发送按钮事件
+            sendButton.addEventListener('click', sendMessage);
+
+            // 绑定输入框回车事件
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        }
+        
+        // 发送文本消息到后端
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // 显示正在思考状态
+            updateRobotState("🤔", "正在思考您的问题...");
+            
+            // 发送消息到后端API
+            fetch(`${API_BASE_URL}/chat/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content: message,
+                    userId: 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0 && data.data) {
+                    updateRobotState(data.data.emoji, data.data.content);
+                }
+            })
+            .catch(error => {
+                console.error('发送消息失败:', error);
+                updateRobotState("⚠️", "抱歉，服务器连接失败，请稍后再试");
+            });
+            
+            // 清空输入框
+            messageInput.value = '';
+        }
+        
+        // 初始化语音识别
+        function initSpeechRecognition() {
+            // 检查浏览器是否支持语音识别
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                
+                // 设置语音识别参数
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'zh-CN';
+                
+                // 设置事件处理函数
+                recognition.onstart = handleRecognitionStart;
+                recognition.onend = handleRecognitionEnd;
+                recognition.onresult = handleRecognitionResult;
+                recognition.onerror = handleRecognitionError;
+                
+                // 绑定按钮点击事件
+                toggleButton.addEventListener('click', toggleRecognition);
+            
+                // 尝试预先获取麦克风权限
+                requestMicrophonePermission();
+            } else {
+                // 浏览器不支持语音识别
+                displayWarning('⚠️ 当前浏览器不支持语音识别功能');
+                disableSpeechRecognition();
+            }
+        }
+        
+        // 请求麦克风权限
+        function requestMicrophonePermission() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    micPermissionGranted = true;
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(error => {
+                    console.error('麦克风权限获取失败:', error);
+                    displayWarning('⚠️ 请授予麦克风访问权限才能使用语音识别');
+                });
+        }
+        
+        // 显示警告信息
+        function displayWarning(message) {
+            transcriptElement.innerHTML = `<div class="warning-message">${message}</div>`;
+        }
+        
+        // 禁用语音识别
+        function disableSpeechRecognition() {
+            toggleButton.disabled = true;
+            toggleButton.textContent = '语音识别不可用';
+            statusElement.style.backgroundColor = '#ff4d4f';
+        }
+        
+        // 开始自动切换
+        function startAutoChange() {
+            stopAutoChange();
+            
+            autoChangeInterval = setInterval(() => {
+                // 使用随机表情和回复
+                fetch(`${API_BASE_URL}/chat/init`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.code === 0 && data.data) {
+                            updateRobotState(data.data.emoji, data.data.content);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取状态失败:', error);
+                    });
+            }, 5000);
+        }
+        
+        // 停止自动切换
+        function stopAutoChange() {
+            if (autoChangeInterval) {
+                clearInterval(autoChangeInterval);
+                autoChangeInterval = null;
+            }
+        }
+        
+        // 更新机器人状态
+        function updateRobotState(emoji, content) {
+            emojiElement.textContent = emoji;
+            responseElement.textContent = content;
+            
+            // 重置并触发动画
+            emojiContainer.style.animation = 'none';
+            // 触发重绘
+            void emojiContainer.offsetWidth;
+            emojiContainer.style.animation = 'emoji-enter 0.5s ease';
+        }
+        
+        // 处理识别开始事件
+        function handleRecognitionStart() {
+            isRecognizing = true;
+            statusElement.classList.add('active');
+            toggleButton.textContent = '停止识别';
+            
+            // 清除任何警告信息
+            if (transcriptElement.querySelector('.warning-message')) {
+                transcriptElement.innerHTML = '';
+            }
+            
+            // 停止自动切换，显示思考表情
+            stopAutoChange();
+            updateRobotState("🤔", "正在倾听...");
+        }
+        
+        // 处理识别结束事件
+        function handleRecognitionEnd() {
+            isRecognizing = false;
+            statusElement.classList.remove('active');
+            toggleButton.textContent = '开始语音识别';
+        }
+        
+        // 处理识别结果事件
+        function handleRecognitionResult(event) {
+            let finalText = '';
+            let interimText = '';
+            
+            // 处理识别结果
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalText += transcript;
+                    
+                    // 当有最终结果时，发送到后端API
+                    if (transcript.trim() !== '') {
+                        sendTranscriptToBackend(transcript);
+                    }
+                } else {
+                    interimText += transcript;
+                }
+            }
+            
+            // 更新显示内容
+            transcriptElement.innerHTML = finalText.replace(/\n/g, '<br>') + 
+                (interimText ? `<span class="interim">${interimText}</span>` : '');
+        }
+        
+        // 发送识别文本到后端API
+        function sendTranscriptToBackend(transcript) {
+            fetch(`${API_BASE_URL}/chat/speech`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    transcript: transcript,
+                    userId: 1 // 可以根据实际情况设置用户ID
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 0 && data.data) {
+                    updateRobotState(data.data.emoji, data.data.content);
+                }
+            })
+            .catch(error => {
+                console.error('发送语音识别文本失败:', error);
+                updateRobotState("⚠️", "抱歉，服务器连接失败，请稍后再试");
+            });
+        }
+        
+        // 处理识别错误事件
+        function handleRecognitionError(event) {
+            console.error('语音识别错误:', event.error);
+            
+            switch (event.error) {
+                case 'not-allowed':
+                case 'permission-denied':
+                    displayWarning('⚠️ 请授予麦克风访问权限才能使用语音识别');
+                    disableSpeechRecognition();
+                    updateRobotState("⚠️", "请授予麦克风访问权限才能使用语音识别");
+                    break;
+                    
+                case 'audio-capture':
+                    displayWarning('⚠️ 未检测到麦克风设备');
+                    updateRobotState("⚠️", "未检测到麦克风设备");
+                    break;
+                    
+                case 'network':
+                    displayWarning('⚠️ 网络连接错误，请检查您的互联网连接');
+                    updateRobotState("⚠️", "网络连接错误，请检查您的互联网连接");
+                    break;
+                    
+                case 'aborted':
+                    // 用户或系统中止
+                    break;
+                    
+                case 'no-speech':
+                    // 没有检测到语音
+                    break;
+                    
+                default:
+                    if (!isRecognizing) return; 
+                    alert(`语音识别错误: ${event.error}`);
+                    updateRobotState("⚠️", "语音识别错误，请稍后再试");
+            }
+        }
+        
+        // 切换语音识别状态
+        function toggleRecognition() {
+            if (isRecognizing) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('启动语音识别失败:', error);
+                    
+                    // 处理already starter错误
+                    if (error.name === 'InvalidStateError') {
+                        try {
+                            recognition.stop();
+                            setTimeout(() => recognition.start(), 200);
+                        } catch (e) {
+                            displayWarning('⚠️ 语音识别服务异常，请刷新页面重试');
+                        }
+                    } else {
+                        alert('启动语音识别失败，请尝试刷新页面');
+                        updateRobotState("⚠️", "启动语音识别失败，请尝试刷新页面");
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html> 
